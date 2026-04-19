@@ -85,131 +85,143 @@
     <p>Пока нет постов. Создайте первый!</p>
   </div>
 
-  <script>
-    // Массив постов (в памяти)
-    let posts = [];
+<script>
+  // Загружаем посты из localStorage при старте
+  let posts = [];
+  const saved = localStorage.getItem("mepost-posts");
+  if (saved) {
+    try {
+      posts = JSON.parse(saved);
+    } catch (e) {
+      console.error("Ошибка чтения данных:", e);
+      posts = [];
+    }
+  }
 
-    // Экранирование HTML
-    function escapeHtml(text) {
-      if (typeof text !== "string") return text;
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+  // Экранирование HTML (защита от XSS)
+  function escapeHtml(text) {
+    if (typeof text !== "string") return text;
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // Генерация списка постов
+  function renderPosts() {
+    const container = document.getElementById("posts");
+    
+    if (posts.length === 0) {
+      container.innerHTML = "<p>Пока нет постов. Создайте первый!</p>";
+      return;
     }
 
-    // Генерация списка постов
-    function renderPosts() {
-      const container = document.getElementById("posts");
-      
-      if (posts.length === 0) {
-        container.innerHTML = "<p>Пока нет постов. Создайте первый!</p>";
-        return;
-      }
+    container.innerHTML = "";
+    posts.forEach((post, index) => {
+      const postDiv = document.createElement("div");
+      postDiv.className = "post";
 
-      // Очищаем и перерисовываем
-      container.innerHTML = "";
-      posts.forEach((post, index) => {
-        const postDiv = document.createElement("div");
-        postDiv.className = "post";
+      const imageHtml = post.image 
+        ? `<img src="${escapeHtml(post.image)}" alt="Картинка" style="max-width:100%; margin:10px 0; border-radius:4px;">`
+        : "";
 
-        const imageHtml = post.image 
-          ? `<img src="${escapeHtml(post.image)}" alt="Картинка" style="max-width:100%; margin:10px 0; border-radius:4px;">`
-          : "";
+      const commentsHtml = post.comments.map(com => `
+        <div class="comment">
+          <b>${escapeHtml(com.author)}</b>: ${escapeHtml(com.text).replace(/\n/g, "<br>")}
+          <br><small>${com.timestamp}</small>
+        </div>
+      `).join("");
 
-        const commentsHtml = post.comments.map(com => `
-          <div class="comment">
-            <b>${escapeHtml(com.author)}</b>: ${escapeHtml(com.text).replace(/\n/g, "<br>")}
-            <br><small>${com.timestamp}</small>
+      postDiv.innerHTML = `
+        <h4>${escapeHtml(post.author)}</h4>
+        <p>${post.content.replace(/\n/g, "<br>")}</p>
+        ${imageHtml}
+        <small>${post.timestamp}</small>
+
+        <div class="comments-section">
+          <h5>Комментарии (${post.comments.length}):</h5>
+          ${commentsHtml || "<p><i>Нет комментариев.</i></p>"}
+
+          <div style="margin-top: 10px;">
+            <input type="text" placeholder="Ваш ник" value="Аноним" style="width: 200px; margin-right: 5px;">
+            <textarea placeholder="Ваш комментарий" rows="2" style="width: 100%; margin: 5px 0;"></textarea>
+            <button onclick="addComment(${index})">Отправить</button>
           </div>
-        `).join("");
+        </div>
+      `;
+      container.appendChild(postDiv);
+    });
+  }
 
-        postDiv.innerHTML = `
-          <h4>${escapeHtml(post.author)}</h4>
-          <p>${post.content.replace(/\n/g, "<br>")}</p>
-          ${imageHtml}
-          <small>${post.timestamp}</small>
+  // Сохраняем посты в localStorage
+  function savePosts() {
+    try {
+      localStorage.setItem("mepost-posts", JSON.stringify(posts));
+    } catch (e) {
+      console.error("Не удалось сохранить посты", e);
+      alert("Недостаточно места для сохранения.");
+    }
+  }
 
-          <div class="comments-section">
-            <h5>Комментарии (${post.comments.length}):</h5>
-            ${commentsHtml || "<p><i>Нет комментариев.</i></p>"}
+  // Создать пост
+  function createPost() {
+    const nick = document.getElementById("author-nick").value.trim() || "Аноним";
+    const content = document.getElementById("post-content").value.trim();
+    const imageUrl = document.getElementById("image-url").value.trim();
 
-            <!-- Форма комментария -->
-            <div style="margin-top: 10px;">
-              <input type="text" placeholder="Ваш ник" value="Аноним" style="width: 200px; margin-right: 5px;">
-              <textarea placeholder="Ваш комментарий" rows="2" style="width: 100%; margin: 5px 0;"></textarea>
-              <button onclick="addComment(${index})">Отправить</button>
-            </div>
-          </div>
-        `;
-        container.appendChild(postDiv);
-      });
+    if (!content) {
+      alert("Пост не может быть пустым.");
+      return;
     }
 
-    // Создать пост
-    function createPost() {
-      const nick = document.getElementById("author-nick").value.trim() || "Аноним";
-      const content = document.getElementById("post-content").value.trim();
-      const imageUrl = document.getElementById("image-url").value.trim();
-
-      if (!content) {
-        alert("Пост не может быть пустым.");
-        return;
-      }
-
-      const newPost = {
-        author: nick,
-        content: content,
-        image: imageUrl,
-        timestamp: new Date().toLocaleString("ru-RU"),
-        comments: []
-      };
-
-      posts.unshift(newPost); // новый сверху
-      document.getElementById("post-content").value = "";
-      document.getElementById("image-url").value = "";
-      renderPosts();
-    }
-
-    // Добавить комментарий
-    function addComment(postIndex) {
-      const post = posts[postIndex];
-      const inputNick = document.querySelectorAll("input[type='text']")[postIndex + 2]; // костыль: индекс поля
-      const textarea = document.querySelectorAll("textarea")[postIndex + 1];
-
-      const author = inputNick.value.trim() || "Аноним";
-      const text = textarea.value.trim();
-
-      if (!text) {
-        alert("Комментарий не может быть пустым.");
-        return;
-      }
-
-      const newComment = {
-        author: author,
-        text: text,
-        timestamp: new Date().toLocaleString("ru-RU")
-      };
-
-      post.comments.push(newComment);
-      textarea.value = "";
-      renderPosts(); // перерисовываем всё
-    }
-
-    // Автозагрузка (если хочешь сохранять через localStorage — раскомментируй)
-    /*
-    window.onload = function () {
-      const saved = localStorage.getItem("mepost-data");
-      if (saved) {
-        posts = JSON.parse(saved);
-        renderPosts();
-      }
+    const newPost = {
+      author: nick,
+      content: content,
+      image: imageUrl,
+      timestamp: new Date().toLocaleString("ru-RU"),
+      comments: []
     };
-    window.onbeforeunload = function () {
-      localStorage.setItem("mepost-data", JSON.stringify(posts));
+
+    posts.unshift(newPost);
+    document.getElementById("post-content").value = "";
+    document.getElementById("image-url").value = "";
+    
+    savePosts();     // ← Сохраняем
+    renderPosts();   // ← Перерисовываем
+  }
+
+  // Добавить комментарий
+  function addComment(postIndex) {
+    const post = posts[postIndex];
+    const inputNick = document.querySelectorAll("input[type='text']")[postIndex + 2];
+    const textarea = document.querySelectorAll("textarea")[postIndex + 1];
+
+    const author = inputNick.value.trim() || "Аноним";
+    const text = textarea.value.trim();
+
+    if (!text) {
+      alert("Комментарий не может быть пустым.");
+      return;
+    }
+
+    const newComment = {
+      author: author,
+      text: text,
+      timestamp: new Date().toLocaleString("ru-RU")
     };
-    */
-  </script>
+
+    post.comments.push(newComment);
+    textarea.value = "";
+    
+    savePosts();     // ← Сохраняем
+    renderPosts();   // ← Перерисовываем
+  }
+
+  // Загружаем посты при открытии страницы
+  window.onload = function () {
+    renderPosts();
+  };
+</script>
 
 </body>
 </html>
