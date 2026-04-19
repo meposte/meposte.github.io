@@ -17,32 +17,46 @@
   <button onclick="submitPost()">Опубликовать</button>
 
   <script>
-    function submitPost() {
-      const nick = document.getElementById("author-nick").value.trim() || "Аноним";
-      const content = document.getElementById("post-content").value.trim();
-      const imageUrl = document.getElementById("image-url").value.trim();
+  function submitPost() {
+    const nick = document.getElementById("author-nick").value.trim() || "Аноним";
+    const content = document.getElementById("post-content").value.trim();
+    const imageUrl = document.getElementById("image-url").value.trim();
 
-      if (!content) {
-        alert("Пост не может быть пустым.");
-        return;
-      }
+    if (!content) {
+      alert("Пост не может быть пустым.");
+      return;
+    }
 
-      const posts = JSON.parse(localStorage.getItem("posts") || "[]");
-      const newPost = {
-        id: Date.now(),
-        author: nick,
-        content: content,
-        image: imageUrl,
-        timestamp: new Date().toLocaleString("ru-RU"),
-        comments: []
-      };
+    // Получаем текущие посты
+    let posts = [];
+    try {
+      const postsRaw = localStorage.getItem("posts");
+      posts = postsRaw ? JSON.parse(postsRaw) : [];
+    } catch (e) {
+      console.error("Ошибка чтения posts из localStorage", e);
+      posts = [];
+    }
 
-      posts.unshift(newPost);
+    const newPost = {
+      id: Date.now(), // уникальный ID
+      author: nick,
+      content: content,
+      image: imageUrl,
+      timestamp: new Date().toLocaleString("ru-RU"),
+      comments: []
+    };
+
+    posts.unshift(newPost); // новый сверху
+
+    try {
       localStorage.setItem("posts", JSON.stringify(posts));
-
       alert("Пост опубликован!");
       window.location.href = "index.html";
+    } catch (e) {
+      alert("Не удалось сохранить пост (возможно, localStorage заполнен)");
+      console.error(e);
     }
-  </script>
+  }
+</script>
 </body>
 </html>

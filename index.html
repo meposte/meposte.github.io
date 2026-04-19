@@ -17,5 +17,15 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+  // Вызываем loadPosts после загрузки DOM
+  document.addEventListener("DOMContentLoaded", function () {
+    if (typeof loadPosts === "function") {
+      loadPosts();
+    } else {
+      console.error("Функция loadPosts не найдена!");
+    }
+  });
+</script>
 </body>
 </html>
