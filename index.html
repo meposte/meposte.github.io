@@ -86,19 +86,21 @@
   </div>
 
 <script>
-  // Загружаем посты из localStorage при старте
+  // Глобальный массив постов
   let posts = [];
+
+  // Загружаем из localStorage
   const saved = localStorage.getItem("mepost-posts");
   if (saved) {
     try {
       posts = JSON.parse(saved);
+      console.log("Загружено из localStorage:", posts);
     } catch (e) {
-      console.error("Ошибка чтения данных:", e);
+      console.error("Ошибка парсинга:", e);
       posts = [];
     }
   }
 
-  // Экранирование HTML (защита от XSS)
   function escapeHtml(text) {
     if (typeof text !== "string") return text;
     return text
@@ -107,10 +109,11 @@
       .replace(/>/g, "&gt;");
   }
 
-  // Генерация списка постов
   function renderPosts() {
+    console.log("renderPosts: количество постов =", posts.length);
     const container = document.getElementById("posts");
-    
+    if (!container) return;
+
     if (posts.length === 0) {
       container.innerHTML = "<p>Пока нет постов. Создайте первый!</p>";
       return;
@@ -153,17 +156,16 @@
     });
   }
 
-  // Сохраняем посты в localStorage
   function savePosts() {
     try {
       localStorage.setItem("mepost-posts", JSON.stringify(posts));
+      console.log("✅ Посты сохранены");
     } catch (e) {
-      console.error("Не удалось сохранить посты", e);
-      alert("Недостаточно места для сохранения.");
+      console.error("❌ Ошибка сохранения:", e);
+      alert("Не удалось сохранить (localStorage переполнен?)");
     }
   }
 
-  // Создать пост
   function createPost() {
     const nick = document.getElementById("author-nick").value.trim() || "Аноним";
     const content = document.getElementById("post-content").value.trim();
@@ -185,19 +187,21 @@
     posts.unshift(newPost);
     document.getElementById("post-content").value = "";
     document.getElementById("image-url").value = "";
-    
-    savePosts();     // ← Сохраняем
-    renderPosts();   // ← Перерисовываем
+
+    savePosts();
+    renderPosts();
   }
 
-  // Добавить комментарий
   function addComment(postIndex) {
     const post = posts[postIndex];
-    const inputNick = document.querySelectorAll("input[type='text']")[postIndex + 2];
-    const textarea = document.querySelectorAll("textarea")[postIndex + 1];
+    const inputs = document.querySelectorAll("input[type='text']");
+    const textareas = document.querySelectorAll("textarea");
+    
+    const inputNick = inputs[postIndex + 2]; // +2: 2 инпута выше (ник, ссылка)
+    const textarea = textareas[postIndex + 1]; // +1: 1 текстареа выше (пост)
 
-    const author = inputNick.value.trim() || "Аноним";
-    const text = textarea.value.trim();
+    const author = (inputNick?.value.trim()) || "Аноним";
+    const text = textarea?.value.trim();
 
     if (!text) {
       alert("Комментарий не может быть пустым.");
@@ -212,15 +216,16 @@
 
     post.comments.push(newComment);
     textarea.value = "";
-    
-    savePosts();     // ← Сохраняем
-    renderPosts();   // ← Перерисовываем
+
+    savePosts();
+    renderPosts();
   }
 
-  // Загружаем посты при открытии страницы
-  window.onload = function () {
+  // Загружаем после готовности DOM
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM готов. Вызываю renderPosts...");
     renderPosts();
-  };
+  });
 </script>
 
 </body>
