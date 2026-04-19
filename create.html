@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Создать пост — MePost</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>MePost</h1>
+  <p><a href="index.html">← На главную</a></p>
+
+  <label for="author-nick">Ваш ник (необязательно):</label><br />
+  <input type="text" id="author-nick" placeholder="Аноним" style="width: 300px;" /><br /><br />
+
+  <textarea id="post-content" rows="6" cols="60" placeholder="Текст поста"></textarea><br />
+  <input type="text" id="image-url" placeholder="Ссылка на изображение (опционально)" style="width: 400px;" /><br /><br />
+  <button onclick="submitPost()">Опубликовать</button>
+
+  <script>
+    function submitPost() {
+      const nick = document.getElementById("author-nick").value.trim() || "Аноним";
+      const content = document.getElementById("post-content").value.trim();
+      const imageUrl = document.getElementById("image-url").value.trim();
+
+      if (!content) {
+        alert("Пост не может быть пустым.");
+        return;
+      }
+
+      const posts = JSON.parse(localStorage.getItem("posts") || "[]");
+      const newPost = {
+        id: Date.now(),
+        author: nick,
+        content: content,
+        image: imageUrl,
+        timestamp: new Date().toLocaleString("ru-RU"),
+        comments: []
+      };
+
+      posts.unshift(newPost);
+      localStorage.setItem("posts", JSON.stringify(posts));
+
+      alert("Пост опубликован!");
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

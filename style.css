@@ -1,0 +1,10 @@
+.comment {
+  margin: 5px 0;
+  padding: 5px;
+  background: #f9f9f9;
+  border-left: 3px solid #c00;
+  font-size: 0.9em;
+}
+.add-comment textarea, .add-comment input {
+  margin: 5px 0;
+}
