@@ -3,29 +3,213 @@
 <head>
   <meta charset="UTF-8" />
   <title>MePost</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 20px auto;
+      padding: 10px;
+      background: #f4f4f4;
+      color: #000;
+      line-height: 1.5;
+    }
+    h1 {
+      color: #c00;
+      border-bottom: 2px solid #c00;
+    }
+    .post {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 15px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .comment {
+      background: #f9f9f9;
+      border-left: 3px solid #c00;
+      margin: 8px 0;
+      padding: 6px 8px;
+      font-size: 0.95em;
+    }
+    input, textarea, button {
+      padding: 6px;
+      margin: 4px 0;
+    }
+    input[type="text"] {
+      width: 100%;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: #c00;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #900;
+    }
+    hr {
+      border: 1px dashed #ccc;
+      margin: 20px 0;
+    }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <h1>MePost</h1>
-    <p style="color: #555; font-size: 0.9em;">Простая сеть для мыслей. Без регистрации.</p>
-    <hr />
-    <div id="posts">
-      <!-- Посты с комментариями будут загружены здесь -->
-    </div>
-    <p><a href="create.html">Создать пост</a></p>
+
+  <h1>MePost</h1>
+  <p>Простая сеть для мыслей. Без регистрации.</p>
+
+  <!-- Форма создания поста -->
+  <div class="create-post">
+    <label><b>Ваш ник:</b></label><br>
+    <input type="text" id="author-nick" placeholder="Аноним" value="Аноним"><br>
+
+    <label><b>Текст поста:</b></label><br>
+    <textarea id="post-content" rows="4" placeholder="Что у вас нового?"></textarea><br>
+
+    <label><b>Ссылка на изображение (опционально):</b></label><br>
+    <input type="text" id="image-url" placeholder="https://..."><br><br>
+
+    <button onclick="createPost()">Опубликовать пост</button>
   </div>
 
-  <script src="script.js"></script>
+  <hr>
+
+  <!-- Лента постов -->
+  <div id="posts">
+    <p>Пока нет постов. Создайте первый!</p>
+  </div>
+
   <script>
-  // Вызываем loadPosts после загрузки DOM
-  document.addEventListener("DOMContentLoaded", function () {
-    if (typeof loadPosts === "function") {
-      loadPosts();
-    } else {
-      console.error("Функция loadPosts не найдена!");
+    // Массив постов (в памяти)
+    let posts = [];
+
+    // Экранирование HTML
+    function escapeHtml(text) {
+      if (typeof text !== "string") return text;
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
     }
-  });
-</script>
+
+    // Генерация списка постов
+    function renderPosts() {
+      const container = document.getElementById("posts");
+      
+      if (posts.length === 0) {
+        container.innerHTML = "<p>Пока нет постов. Создайте первый!</p>";
+        return;
+      }
+
+      // Очищаем и перерисовываем
+      container.innerHTML = "";
+      posts.forEach((post, index) => {
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+
+        const imageHtml = post.image 
+          ? `<img src="${escapeHtml(post.image)}" alt="Картинка" style="max-width:100%; margin:10px 0; border-radius:4px;">`
+          : "";
+
+        const commentsHtml = post.comments.map(com => `
+          <div class="comment">
+            <b>${escapeHtml(com.author)}</b>: ${escapeHtml(com.text).replace(/\n/g, "<br>")}
+            <br><small>${com.timestamp}</small>
+          </div>
+        `).join("");
+
+        postDiv.innerHTML = `
+          <h4>${escapeHtml(post.author)}</h4>
+          <p>${post.content.replace(/\n/g, "<br>")}</p>
+          ${imageHtml}
+          <small>${post.timestamp}</small>
+
+          <div class="comments-section">
+            <h5>Комментарии (${post.comments.length}):</h5>
+            ${commentsHtml || "<p><i>Нет комментариев.</i></p>"}
+
+            <!-- Форма комментария -->
+            <div style="margin-top: 10px;">
+              <input type="text" placeholder="Ваш ник" value="Аноним" style="width: 200px; margin-right: 5px;">
+              <textarea placeholder="Ваш комментарий" rows="2" style="width: 100%; margin: 5px 0;"></textarea>
+              <button onclick="addComment(${index})">Отправить</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(postDiv);
+      });
+    }
+
+    // Создать пост
+    function createPost() {
+      const nick = document.getElementById("author-nick").value.trim() || "Аноним";
+      const content = document.getElementById("post-content").value.trim();
+      const imageUrl = document.getElementById("image-url").value.trim();
+
+      if (!content) {
+        alert("Пост не может быть пустым.");
+        return;
+      }
+
+      const newPost = {
+        author: nick,
+        content: content,
+        image: imageUrl,
+        timestamp: new Date().toLocaleString("ru-RU"),
+        comments: []
+      };
+
+      posts.unshift(newPost); // новый сверху
+      document.getElementById("post-content").value = "";
+      document.getElementById("image-url").value = "";
+      renderPosts();
+    }
+
+    // Добавить комментарий
+    function addComment(postIndex) {
+      const post = posts[postIndex];
+      const inputNick = document.querySelectorAll("input[type='text']")[postIndex + 2]; // костыль: индекс поля
+      const textarea = document.querySelectorAll("textarea")[postIndex + 1];
+
+      const author = inputNick.value.trim() || "Аноним";
+      const text = textarea.value.trim();
+
+      if (!text) {
+        alert("Комментарий не может быть пустым.");
+        return;
+      }
+
+      const newComment = {
+        author: author,
+        text: text,
+        timestamp: new Date().toLocaleString("ru-RU")
+      };
+
+      post.comments.push(newComment);
+      textarea.value = "";
+      renderPosts(); // перерисовываем всё
+    }
+
+    // Автозагрузка (если хочешь сохранять через localStorage — раскомментируй)
+    /*
+    window.onload = function () {
+      const saved = localStorage.getItem("mepost-data");
+      if (saved) {
+        posts = JSON.parse(saved);
+        renderPosts();
+      }
+    };
+    window.onbeforeunload = function () {
+      localStorage.setItem("mepost-data", JSON.stringify(posts));
+    };
+    */
+  </script>
+
 </body>
 </html>
